@@ -19,7 +19,7 @@ class FFDB(object):
         Path(self.tar_path).mkdir(exist_ok=True, parents=True)
 
     def get_hashed_fs(self, key):
-        hashed = sha256(bytes(key, 'utf8')).hexdigest()[:10]
+        hashed = sha256(bytes(key, 'utf8')).hexdigest()[:16]
         fn = f'{self.tar_path}/{hashed}'
         return fn
 
