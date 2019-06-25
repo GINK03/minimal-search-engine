@@ -18,7 +18,7 @@ ffdb = FFDB(tar_path='tmp/htmls')
 DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get(
     'DELAY_TIME') else 0.0
 
-CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 16
+CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 32
 
 HTML_TIME_ROW = namedtuple(
     'HTML_TIME_ROW', ['html', 'time', 'url', 'status_code'])
@@ -72,7 +72,8 @@ def scrape(arg):
             soup = BeautifulSoup(r.text, features='html5')
             if not (soup.find('html').get('lang') == 'ja' or 
                         (soup.find('meta', {'name': "content-language"}) and soup.find('meta', {'name': "content-language"}).get('content') == "ja") or 
-                        (soup.find('meta', {'http-equiv': "Content-Type"}) and 'jp' in soup.find('meta', {'http-equiv': "Content-Type"}).get('content'))):
+                        (soup.find('meta', {'http-equiv': "Content-Type"}) and 'jp' in soup.find('meta', {'http-equiv': "Content-Type"}).get('content')) or 
+                        ('.jp' in netloc)):
                 ffdb.save(key=url, val=None)
                 continue
 
@@ -101,6 +102,13 @@ def scrape(arg):
         except Exception as ex:
             print('err', url)
             print(ex)
+    
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('finish batch-forked iteration.')
+    Path('tmp/snapshots').mkdir(exist_ok=True, parents=True)
+    with open(f'tmp/snapshots/snapshot_{now}.pkl', 'wb') as fp:
+        fp.write(pickle.dumps(ret))
+
     return ret
 
 
@@ -122,7 +130,6 @@ if __name__ == '__main__':
     urls |= scrape((3, ['http://blog.livedoor.jp/geek/archives/cat_10022560.html']))
     #urls |= scrape((4, ['https://www3.nhk.or.jp/news/']))
     print(urls)
-    Path('tmp/snapshots').mkdir(exist_ok=True, parents=True)
     snapshots = sorted(glob.glob('tmp/snapshots/snapshot_*'))
     for snapshot in snapshots:
         urls |= pickle.loads(open(snapshot, 'rb').read())
@@ -133,9 +140,5 @@ if __name__ == '__main__':
                 if _urlret is not None:
                     urltmp |= _urlret
         urls = urltmp
-        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print('finish one iteration.')
-        with open(f'tmp/snapshots/snapshot_{now}.pkl', 'wb') as fp:
-            fp.write(pickle.dumps(urls))
         if len(urls) == 0:
             break
