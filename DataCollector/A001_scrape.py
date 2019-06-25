@@ -12,12 +12,14 @@ import glob
 from pathlib import Path
 import time
 import os
+from collections import namedtuple
 ffdb = FFDB(tar_path='tmp/htmls')
 
 DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get('DELAY_TIME') else 0.0
 
 CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 32
 
+HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time'])
 def scrape(arg):
     key, urls = arg
     
@@ -35,7 +37,7 @@ def scrape(arg):
                 print(r.status_code)
                 raise Exception('there is error code')
             
-            ffdb.save(key=url, val=r.text)
+            ffdb.save(key=url, val= [HTML_TIME_ROW(html=r.text, time=datetime.datetime.now())] )
             soup = BeautifulSoup(r.text, features='html5')
 
             for a in soup.find_all('a', {'href':True}):
