@@ -19,7 +19,7 @@ DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get('DELAY_TIME') els
 
 CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 32
 
-HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time'])
+HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
 def scrape(arg):
     key, urls = arg
     
@@ -37,9 +37,12 @@ def scrape(arg):
                 print(r.status_code)
                 raise Exception('there is error code')
             
-            ffdb.save(key=url, val= [HTML_TIME_ROW(html=r.text, time=datetime.datetime.now())] )
             soup = BeautifulSoup(r.text, features='html5')
-
+            if soup.find('html').get('lang') != 'ja':
+                ffdb.save(key=url, val=None)
+                continue
+        
+            ffdb.save(key=url, val= [HTML_TIME_ROW(html=r.text, time=datetime.datetime.now(), url=url)] )
             for a in soup.find_all('a', {'href':True}):
                 urlpsub = urllib.parse.urlparse(a.get('href'))
                 urlpsub = urlpsub._replace(scheme=scheme, netloc=netloc, query='')
@@ -51,7 +54,7 @@ def scrape(arg):
             time.sleep(DELAY_TIME) 
             print('done', url)
         except Exception as ex:
-            print(ex)
+            print(ex)  
     return ret
 
 def chunk_urls(urls):
