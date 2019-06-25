@@ -19,7 +19,7 @@ DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get('DELAY_TIME') els
 
 CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 32
 
-HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
+HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url', 'status_code'])
 def scrape(arg):
     key, urls = arg
     
@@ -33,7 +33,8 @@ def scrape(arg):
             r = requests.get(url, timeout=30.0, \
                     headers = {'User-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'})
             r.encoding = r.apparent_encoding
-            if r.status_code not in {200, 404}:
+            status_code = r.status_code
+            if status_code not in {200, 404}:
                 print(r.status_code)
                 raise Exception('there is error code')
             
@@ -42,7 +43,7 @@ def scrape(arg):
                 ffdb.save(key=url, val=None)
                 continue
         
-            ffdb.save(key=url, val= [HTML_TIME_ROW(html=r.text, time=datetime.datetime.now(), url=url)] )
+            ffdb.save(key=url, val= [HTML_TIME_ROW(html=r.text, time=datetime.datetime.now(), url=url, status_code=status_code)] )
             for a in soup.find_all('a', {'href':True}):
                 urlpsub = urllib.parse.urlparse(a.get('href'))
                 urlpsub = urlpsub._replace(scheme=scheme, netloc=netloc, query='')

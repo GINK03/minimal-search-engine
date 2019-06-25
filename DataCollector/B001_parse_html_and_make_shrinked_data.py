@@ -10,7 +10,7 @@ import FFDB
 from concurrent.futures import ProcessPoolExecutor as PPE
 
 ffdb = FFDB.FFDB(tar_path='tmp/parsed')
-HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
+HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url', 'status_code'])
 PARSED = namedtuple('PARSED', ['url', 'time', 'title', 'description', 'body'])
 
 def pmap(arg):
@@ -23,6 +23,9 @@ def pmap(arg):
             html = arow[-1].html
             time = arow[-1].time
             url = arow[-1].url
+            status_code = arow[-1].status_code
+            if status_code != 200:
+                continue
             if ffdb.exists(key=url) is True:
                 continue
             soup = BeautifulSoup(html, features='html5')
@@ -32,8 +35,11 @@ def pmap(arg):
             for script in soup(['script', 'style']):
                 script.decompose()
             title = soup.title.text
-            description = soup.find('meta', attrs={'name': 'description'}).text if soup.find(
-                'meta', attrs={'name': 'description'}) else ''
+            description = soup.find('head').find('meta', {'name': 'description'})
+            if description is None:
+                description = ''
+            else:
+                description = description.get('content')
             body = soup.find('body').get_text()
             body = re.sub('\n', ' ', body)
             body = re.sub(r'\s{1,}', ' ', body)
