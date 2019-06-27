@@ -15,8 +15,7 @@ import os
 from collections import namedtuple
 ffdb = FFDB(tar_path='tmp/htmls')
 
-DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get(
-    'DELAY_TIME') else 0.0
+DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get( 'DELAY_TIME') else 0.0
 
 CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 32
 
@@ -39,22 +38,37 @@ def QOS(netloc):  # print('qos', qos.count(netloc))
         return True
 
 def blackList(url):
-    if 'twitter' in url:
+    if 'twitter.com' in url:
         return False
     elif 'wikipedia' in url:
         return False
+    elif 'rakuten.co.jp' in url:
+        return False
+    elif 'amazon.co.jp' in url:
+        return False
+    elif 'dmm.co.jp' in url:
+        return False
     else:
-        return True
+        return True 
 
+def path_paramter_sanitize(url):
+    urlp = urllib.parse.urlparse(url)
+    path = urlp.path
+    path = re.sub(r'/-/.*?$', '', path)
+    #print(path)
+    url = urlp._replace(path=path).geturl()
+    return url
 def scrape(arg):
     key, urls = arg
     ret = set()
     for url in urls:
-        if blackList(url) is False:
-            continue
-        if ffdb.exists(url) is True:
-            continue
         try:
+            url = path_paramter_sanitize(url)
+            #print(url)
+            if blackList(url) is False:
+                continue
+            if ffdb.exists(url) is True:
+                continue
             urlp = urllib.parse.urlparse(url)
             scheme, netloc = (urlp.scheme, urlp.netloc)
             # if QOS(netloc=netloc) is False:
@@ -69,7 +83,7 @@ def scrape(arg):
                 print(r.status_code)
                 raise Exception('there is error code')
 
-            soup = BeautifulSoup(r.text, features='html5')
+            soup = BeautifulSoup(r.text, features='lxml')
             if not (soup.find('html').get('lang') == 'ja' or 
                         (soup.find('meta', {'name': "content-language"}) and soup.find('meta', {'name': "content-language"}).get('content') == "ja") or 
                         (soup.find('meta', {'http-equiv': "Content-Type"}) and 'jp' in soup.find('meta', {'http-equiv': "Content-Type"}).get('content')) or 
@@ -96,11 +110,15 @@ def scrape(arg):
                 #    continue
                 #print('after', urlpsub)
                 #print(url, urlpsub.geturl())
-                ret.add(urlpsub.geturl())
+                ret.add(path_paramter_sanitize(urlpsub.geturl()))
+
+            # retがメモリを消費しすぎるので10000件にリンクを限定
+            ret = set(list(ret)[-1000:])
             time.sleep(DELAY_TIME)
             print('done', url)
         except Exception as ex:
             print('err', url)
+            ffdb.save(key=url, val=None)
             print(ex)
     
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -114,23 +132,23 @@ def scrape(arg):
 
 def chunk_urls(urls):
     args = {}
+    CHUNK = len(urls)//100000
     for idx, url in enumerate(urls):
-        key = idx % CPU_SIZE
+        key = idx % CHUNK
         if args.get(key) is None:
             args[key] = []
         args[key].append(url)
     args = [(key, urls) for key, urls in args.items()]
     return args
 
-
-if __name__ == '__main__':
+def main():
     urls = set()
     # urls |= scrape((1, ['https://news.yahoo.co.jp/']))
     #urls |= scrape((2, ['https://www.msn.com/ja-jp/news']))
     urls |= scrape((3, ['http://blog.livedoor.jp/geek/archives/cat_10022560.html']))
     #urls |= scrape((4, ['https://www3.nhk.or.jp/news/']))
     print(urls)
-    snapshots = sorted(glob.glob('tmp/snapshots/snapshot_*'))
+    snapshots = sorted(glob.glob('tmp/snapshots/*'))
     for snapshot in snapshots:
         urls |= pickle.loads(open(snapshot, 'rb').read())
     while True:
@@ -142,3 +160,5 @@ if __name__ == '__main__':
         urls = urltmp
         if len(urls) == 0:
             break
+if __name__ == '__main__':
+    main()

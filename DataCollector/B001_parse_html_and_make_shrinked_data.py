@@ -20,7 +20,7 @@ PARSED = namedtuple(
 def pmap(arg):
     key, paths = arg
     for idx, path in enumerate(paths):
-        #try:
+        try:
             last_fn = str(path).split('/')[-1]
             if Path(f'tmp/parsed/{last_fn}').exists():
                 print('passed', idx, path)
@@ -38,6 +38,7 @@ def pmap(arg):
             status_code = arow[-1].status_code
             if status_code != 200:
                 print('skip', status_code)
+                ffdb.save(key=url, val=None)
                 continue
             if ffdb.exists(key=url) is True:
                 continue
@@ -65,24 +66,32 @@ def pmap(arg):
                 if urlpsub.netloc == '':
                     urlpsub = urlpsub._replace(
                         scheme=scheme, netloc=netloc, query='')
+                if urlpsub.scheme == '':
+                    urlpsub = urlpsub._replace(
+                        scheme=scheme)
+
                 hrefs.add(urlpsub.geturl())
                 #print(url, urlpsub.geturl())
                 parsed = PARSED(url=url, time=time, title=title,
                                 description=description, body=body, hrefs=hrefs)
                 ffdb.save(key=url, val=parsed)
-        #except Exception as ex:
-        #    print(ex)
-        #    ffdb.save(key=url, val=None)
-        #    continue
+        except Exception as ex:
+            print(ex)
+            ffdb.save(key=url, val=None)
+            try:
+                del soup
+            except:
+                ...
+            continue
 
 
 args = {}
 for idx, path in enumerate(Path().glob('./tmp/htmls/*')):
-    key = idx % 16
+    key = idx % 100000
     if args.get(key) is None:
         args[key] = []
     args[key].append(path)
 args = [(key, paths) for key, paths in args.items()]
 #[pmap(arg) for arg in args]
-with TPE(max_workers=16) as exe:
+with PPE(max_workers=16) as exe:
     exe.map(pmap, args)

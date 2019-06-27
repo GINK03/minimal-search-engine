@@ -12,7 +12,7 @@ import MeCab
 import json
 import math
 HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
-PARSED = namedtuple('PARSED', ['url', 'time', 'title', 'description', 'body'])
+PARSED = namedtuple('PARSED', ['url', 'time', 'title', 'description', 'body', 'hrefs'])
 URL_TFIDF = namedtuple('URL_TFIDF', ['url', 'tfidf'])
 
 ffdb = FFDB.FFDB('tmp/tfidf')
@@ -34,6 +34,8 @@ def pmap(arg):
             if arow is None:
                 continue
             url = arow.url
+            if ffdb.exists(key=url) is True:
+                continue
             text = arow.title + arow.description + arow.body
             text = sanitize(text)
             for term in m.parse(text).strip().split():

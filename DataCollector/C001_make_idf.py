@@ -11,7 +11,7 @@ from concurrent.futures import ProcessPoolExecutor as PPE
 import MeCab
 import json
 HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
-PARSED = namedtuple('PARSED', ['url', 'time', 'title', 'description', 'body'])
+PARSED = namedtuple('PARSED', ['url', 'time', 'title', 'description', 'body', 'hrefs'])
 
 def sanitize(text):
     import mojimoji
@@ -25,6 +25,7 @@ def pmap(arg):
 
     term_freq = {} # this is per doc
     for path in paths:
+        #pickle.loads(gzip.decompress(path.open('rb').read()))
         try:
             arow = pickle.loads(gzip.decompress(path.open('rb').read()))
             if arow is None:
@@ -35,7 +36,9 @@ def pmap(arg):
                 if term_freq.get(term) is None:
                     term_freq[term] = 0
                 term_freq[term] += 1
-
+        except EOFError as ex:
+            path.unlink()
+            continue
         except Exception as ex:
             print(ex)
             continue
@@ -48,6 +51,7 @@ for idx, path in enumerate(Path().glob('./tmp/parsed/*')):
         args[key] = []
     args[key].append(path)
 args = [(key, paths) for key, paths in args.items()]
+#[pmap(args[0])]
 
 term_freq = {}
 with PPE(max_workers=16) as exe:
