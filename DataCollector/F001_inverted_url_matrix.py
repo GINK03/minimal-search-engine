@@ -23,7 +23,12 @@ def pmap(arg):
             if a is None:
                 continue
         except Exception as ex:
-            print(ex)
+            if ex.args == ('Ran out of input',):
+                path.unlink()
+                continue
+            else:
+                print(ex.args)
+                continue
         url = a.url
         netloc_parent = urllib.parse.urlparse(url).netloc
         for href in a.hrefs:

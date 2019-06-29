@@ -10,8 +10,9 @@ import pickle
 import datetime
 from concurrent.futures import ProcessPoolExecutor as PPE
 import itertools
-import pandas as pd
+#import pandas as pd
 import re
+import glob
 
 class FFDB(object):
     def __init__(self, tar_path='tmp/ffdb'):
@@ -42,5 +43,11 @@ class FFDB(object):
         with open(fn, 'rb') as fs:
             obj = pickle.loads(gzip.decompress(fs.read()))
         return obj
+    
+    def get_iter(self):
+        for fn in glob.glob(f'{self.tar_path}/*'):
+            with open(fn, 'rb') as fp:
+                obj = pickle.loads(gzip.decompress(fp.read()))
+            yield obj
 
 

@@ -1,3 +1,5 @@
+import random
+import glob
 from pathlib import Path
 import pickle
 import gzip
@@ -7,18 +9,21 @@ from datetime import timedelta
 from bs4 import BeautifulSoup
 import urllib.parse
 import re
+import gc
 import FFDB
 from concurrent.futures import ProcessPoolExecutor as PPE
 from concurrent.futures import ThreadPoolExecutor as TPE
 
-ffdb = FFDB.FFDB(tar_path='tmp/parsed')
 HTML_TIME_ROW = namedtuple(
     'HTML_TIME_ROW', ['html', 'time', 'url', 'status_code'])
 PARSED = namedtuple(
     'PARSED', ['url', 'time', 'title', 'description', 'body', 'hrefs'])
 
+
 def pmap(arg):
+    ffdb = FFDB.FFDB(tar_path='tmp/parsed')
     key, paths = arg
+    print('start', key)
     for idx, path in enumerate(paths):
         try:
             last_fn = str(path).split('/')[-1]
@@ -26,7 +31,8 @@ def pmap(arg):
                 print('passed', idx, path)
                 continue
             now = datetime.datetime.now()
-            arow = pickle.loads(gzip.decompress(path.open('rb').read()))
+            with open(path, 'rb') as fp:
+                arow = pickle.loads(gzip.decompress(fp.read()))
             if arow is None:
                 continue
             html = arow[-1].html
@@ -42,14 +48,15 @@ def pmap(arg):
                 continue
             if ffdb.exists(key=url) is True:
                 continue
-            #print(path)
-            #continue
-            print(path)
-            soup = BeautifulSoup(html, features='html5lib')
+            # print(path)
+            # continue
+            print(idx, path)
+            soup = BeautifulSoup(html, features='lxml')
 
             for script in soup(['script', 'style']):
                 script.decompose()
             title = soup.title.text
+            print(title)
             description = soup.find('head').find(
                 'meta', {'name': 'description'})
             if description is None:
@@ -71,27 +78,29 @@ def pmap(arg):
                         scheme=scheme)
 
                 hrefs.add(urlpsub.geturl())
-                #print(url, urlpsub.geturl())
-                parsed = PARSED(url=url, time=time, title=title,
-                                description=description, body=body, hrefs=hrefs)
-                ffdb.save(key=url, val=parsed)
+            #print(url, urlpsub.geturl())
+            parsed = PARSED(url=url, time=time, title=title,
+                            description=description, body=body, hrefs=hrefs)
+            ffdb.save(key=url, val=parsed)
         except Exception as ex:
             print(ex)
             ffdb.save(key=url, val=None)
-            try:
-                del soup
-            except:
-                ...
-            continue
+    gc.collect()
+    print('finish batch', key)
 
 
 args = {}
-for idx, path in enumerate(Path().glob('./tmp/htmls/*')):
-    key = idx % 100000
+files = list(glob.glob('./tmp/htmls/*'))
+random.shuffle(files)
+size = len(files)
+for idx, path in enumerate(files):
+    key = idx % (size//100)
+    #key = idx % 16
     if args.get(key) is None:
         args[key] = []
     args[key].append(path)
 args = [(key, paths) for key, paths in args.items()]
+print('made chunks')
 #[pmap(arg) for arg in args]
-with PPE(max_workers=16) as exe:
+with PPE(max_workers=32) as exe:
     exe.map(pmap, args)

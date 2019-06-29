@@ -36,6 +36,7 @@ def pmap(arg):
                 if term_freq.get(term) is None:
                     term_freq[term] = 0
                 term_freq[term] += 1
+            print(path)
         except EOFError as ex:
             path.unlink()
             continue

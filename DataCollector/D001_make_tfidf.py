@@ -36,12 +36,23 @@ def pmap(arg):
             url = arow.url
             if ffdb.exists(key=url) is True:
                 continue
-            text = arow.title + arow.description + arow.body
+
+            # title desc weight = 1
+            text = arow.title + arow.description# + arow.body
             text = sanitize(text)
             for term in m.parse(text).strip().split():
-                if term_freq.get(term) is None:
+                if term_freq.get(term) is none:
                     term_freq[term] = 0
                 term_freq[term] += 1
+            
+            # title body = 0.001
+            text = arow.body
+            text = sanitize(text)
+            for term in m.parse(text).strip().split():
+                if term_freq.get(term) is none:
+                    term_freq[term] = 0
+                term_freq[term] += 0.001
+            
             tfidf = {}
             for term in list(term_freq.keys()):
                 tfidf[term] = math.log(term_freq[term]+math.e)/idf[term]
