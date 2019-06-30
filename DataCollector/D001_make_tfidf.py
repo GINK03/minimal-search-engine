@@ -1,3 +1,4 @@
+import glob
 from pathlib import Path
 import pickle
 import gzip
@@ -12,22 +13,29 @@ import MeCab
 import json
 import math
 HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
-PARSED = namedtuple('PARSED', ['url', 'time', 'title', 'description', 'body', 'hrefs'])
+PARSED = namedtuple(
+    'PARSED', ['url', 'time', 'title', 'description', 'body', 'hrefs'])
 URL_TFIDF = namedtuple('URL_TFIDF', ['url', 'tfidf'])
 
 ffdb = FFDB.FFDB('tmp/tfidf')
+
+
 def sanitize(text):
     import mojimoji
     text = mojimoji.zen_to_han(text, kana=False)
     text = text.lower()
     return text
 
+
+idf = json.load(open('tmp/idf.json'))
 def pmap(arg):
     key, paths = arg
-    m = MeCab.Tagger('-Owakati -d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-ipadic-neologd')
-    idf = json.load(open('tmp/idf.json'))
+    m = MeCab.Tagger(
+        '-Owakati -d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-ipadic-neologd')
 
     for path in paths:
+        path = Path(path)
+        #print(path)
         term_freq = {}
         try:
             arow = pickle.loads(gzip.decompress(path.open('rb').read()))
@@ -38,21 +46,21 @@ def pmap(arg):
                 continue
 
             # title desc weight = 1
-            text = arow.title + arow.description# + arow.body
+            text = arow.title + arow.description  # + arow.body
             text = sanitize(text)
             for term in m.parse(text).strip().split():
-                if term_freq.get(term) is none:
+                if term_freq.get(term) is None:
                     term_freq[term] = 0
                 term_freq[term] += 1
-            
+
             # title body = 0.001
             text = arow.body
             text = sanitize(text)
             for term in m.parse(text).strip().split():
-                if term_freq.get(term) is none:
+                if term_freq.get(term) is None:
                     term_freq[term] = 0
                 term_freq[term] += 0.001
-            
+
             tfidf = {}
             for term in list(term_freq.keys()):
                 tfidf[term] = math.log(term_freq[term]+math.e)/idf[term]
@@ -61,14 +69,15 @@ def pmap(arg):
             print(ex)
             continue
 
+
 args = {}
-for idx, path in enumerate(Path().glob('./tmp/parsed/*')):
+for idx, path in enumerate(glob.glob('./tmp/parsed/*')):
     key = idx % 16
     if args.get(key) is None:
         args[key] = []
     args[key].append(path)
 args = [(key, paths) for key, paths in args.items()]
-
+#[pmap(args[0])]
 term_freq = {}
 with PPE(max_workers=16) as exe:
     exe.map(pmap, args)

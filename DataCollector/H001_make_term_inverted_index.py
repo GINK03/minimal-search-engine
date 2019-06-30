@@ -36,15 +36,17 @@ def pmap(arg):
             print(url, href_refnum.get(url))
             refnum = href_refnum.get(url) if href_refnum.get(url) else 0
             # 小さいデータでテスト
-            if refnum == 0:
-                continue
+            #if refnum == 0:
+            #    continue
             for t, w in tfidf.items():
                 if idf.get(t) <= 100:
                     continue
+                thashing = hashing(t)
                 try:
-                    with open(f'tmp/inverted-index/{t}', 'a') as fp:
+                    with gzip.open(f'tmp/inverted-index/{thashing}', 'at') as fp:
                         fp.write(f'{urlhash}\t{w}\t{refnum}\t{url}\n')
-                except:
+                except Exception as ex:
+                    print(ex)
                     ...
         except Exception as exe:
             print(exe)
