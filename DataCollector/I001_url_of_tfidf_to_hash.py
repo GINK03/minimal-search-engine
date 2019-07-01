@@ -8,13 +8,9 @@ from pathlib import Path
 import glob
 import pickle
 import gzip
-idf = json.load(open('tmp/idf.json'))
-href_refnum = json.load(open('tmp/href_refnum.json'))
-
 
 def hashing(x):
     return sha256(bytes(x, 'utf8')).hexdigest()[:16]
-
 
 HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
 PARSED = namedtuple(
@@ -24,10 +20,12 @@ URL_TFIDF = namedtuple('URL_TFIDF', ['url', 'tfidf'])
 # URL_W = namedtuple('URL_W', ['url', 'w'])
 Path('tmp/inverted-index/').mkdir(exist_ok=True)
 
+Path('tmp/hash_url').mkdir(exist_ok=True, parents=True)
+
 
 def pmap(arg):
     key, paths = arg
-
+    hash_url = {}
     for idx, path in enumerate(paths):
         path = Path(path)
         try:
@@ -37,23 +35,11 @@ def pmap(arg):
             tfidf = a.tfidf
 
             urlhash = hashing(url)
-            print(url, href_refnum.get(url))
-            refnum = href_refnum.get(url) if href_refnum.get(url) else 0
-            # 小さいデータでテスト
-            # if refnum == 0:
-            #    continue
-            for t, w in tfidf.items():
-                if idf.get(t) <= 300:
-                    continue
-                thashing = hashing(t)
-                try:
-                    with open(f'tmp/inverted-index/{thashing}', 'a') as fp:
-                        fp.write(f'{urlhash}\t{w:0.09f}\t{refnum}\n')
-                except Exception as ex:
-                    print(ex)
-                    ...
+            hash_url[urlhash] = url
+            print(urlhash, url)
         except Exception as exe:
             print(exe)
+    json.dump(hash_url, fp=open(f'tmp/hash_url/{key:04d}.json', 'w'), indent=2)
 
 
 args = {}
@@ -63,5 +49,6 @@ for idx, path in enumerate(glob.glob('tmp/tfidf/*')):
         args[key] = []
     args[key].append(path)
 args = [(key, paths) for key, paths in args.items()]
+#[pmap(args[0])]
 with PPE(max_workers=16) as exe:
     exe.map(pmap, args)
