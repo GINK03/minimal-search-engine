@@ -148,3 +148,13 @@ Pixivについては明示的にクローリング先に設定していないが
 <div align="center">
  <img width="100%" src="https://user-images.githubusercontent.com/4949982/60481649-4286c980-9cc9-11e9-9601-2cb562ca29a9.png">
 </div>
+
+## weightのスコアリングはどうあるべきか
+かなり難しい問題であるべき並び順もわかっていない and ユーザの行動ログも取れない ので、特徴量 tfidf(1), 被参照数(2), Pagerankのスコア(3)などが入り乱れていてこれを同ヒューリスティックに組み合わせるかという問題になりそうです。  
+（純粋にユーザ行動ログが取れていればこれらの特徴から、ユーザがちゃんと読む確率を弾くなどすれば良さそうですが）  
+
+手でいろいろ試してみて、良さそうなスコアはこのような感じなりました。（私が正解データです）  
+<div align="center">
+ <img width="500px" src="https://user-images.githubusercontent.com/4949982/60492003-fc3f6380-9ce4-11e9-8374-2527be25a90c.png">
+</div>
+
