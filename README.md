@@ -11,3 +11,7 @@
  - I. hash化されたURLと実際のURLの対応表の作成
  - J. PageRankの学習
  - K. 検索のインターフェース 
+
+<div align="center">
+ <img width="650px" src="https://user-images.githubusercontent.com/4949982/60479460-e28c2500-9cc0-11e9-890c-def6f32a17d9.png">
+</div>
