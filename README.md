@@ -20,7 +20,10 @@
 ### A. クローリング
  特定のドメインによらず、網羅的にクローリングしていきます。 このときブログサイトをシードとしてドメインを限定せずどこまでも深く潜っていきます。  
  このとき、多様なサイトをクロールするがとても重いので、[自作した分散可能なKVSをバックエンドのDB](https://github.com/GINK03/pure-python-kvs-f2db)と利用しています。SQLLiteなどだとファイルが壊れやすく、LevelDB等だとシングルアクセスしかできません。  
- 
+<div align="center">
+ <img width="650px" src="https://user-images.githubusercontent.com/4949982/60482435-78797d00-9ccc-11e9-83f1-2623c2878dc8.png">
+</div>
+
 ### B. HTMLのパースと整形
  Aで取得したデータは大きすぎるので、Bのプロセスで、ｔｆ-idfでの検索の主な特徴量となる、"title", "description", "body"を取り出します。  
  また、そのページが参照している外部のURLをすべてパースします。  
