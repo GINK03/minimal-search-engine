@@ -74,6 +74,18 @@ for term in m.parse(text).strip().split():
 
 ### G. 非参照数のカウントと、PageRankのための学習データの作成
  Fで作成したデータをもとに、networkxというライブラリでPageRankのノードのウェイトを学習可能なので、学習用データを作成します  
+ 
+ このようなデータセットが入寮として望まれる(右のハッシュがリンク元、左のハッシュがリンク先)  
+```
+d2a88da0ca550a8b 37a3d49657247e61
+d2a88da0ca550a8b 6552c5a8ff9b2470
+d2a88da0ca550a8b 3bf8e875fc951502
+d2a88da0ca550a8b 935b17a90f5fb652
+7996001a6e079a31 aabef32c9c8c4c13
+d2a88da0ca550a8b e710f0bdab0ac500
+d2a88da0ca550a8b a4bcfc4597f138c7
+4cd5e7e2c81108be 7de6859b50d1eed2
+```
 
 ### H. tfidfから簡単にURLを逆引きできるように、転置インデックスの作成
  最もシンプルなtfidfのみでの検索に対応できるように、単語からURLをすぐ検索できるindexを作ります  
