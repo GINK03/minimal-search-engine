@@ -101,10 +101,40 @@ d2a88da0ca550a8b a4bcfc4597f138c7
  URLはそのままメモリ上に持つとオーバーフローしてしまうので、sha256をつかって先頭の16文字だけを使った小さいhash値とみなすことで700万件程度の実用に耐えうる検索が可能になります。
 
 ### J. PageRankの学習
- Gで作成したデータを学習してURLにウェイトを割り振ります
+ Gで作成したデータを学習してURLにウェイトを割り振ります  
+ 
+ networkxを用いれば凄くシンプルなコードで学習する事ができます  
+ 
+```
+import networkx as nx
+import json
+G = nx.read_edgelist('tmp/to_pagerank.txt', nodetype=str)
+# ノード数とエッジ数を出力
+print(nx.number_of_nodes(G))
+print(nx.number_of_edges(G))
+print('start calc pagerank')
+pagerank = nx.pagerank(G)
+print('finish calc pagerank')
+json.dump(pagerank, fp=open('tmp/pagerank.json', 'w'), indent=2)
+```
  
 ### K. 検索のインターフェース
  検索IFを提供
+ 
+```console 
+$ python3 K001_search_query.py
+(ここで検索クエリを入力)
+```
+例
+```console
+$ python3 K001_search_query.py
+ふわふわ
+                   hurl    weight  refnum  weight_norm                                                            url  pagerank  weight*refnum_score+pagerank
+9276   36b736bccbbb95f2  0.000049       1     1.000000  https://bookwalker.jp/dea270c399-d1c5-470e-98bd-af9ba8d8464a/  0.000146                      1.009695
+2783   108a6facdef1cf64  0.000037       0     0.758035     http://blog.livedoor.jp/usausa_life/archives/79482577.html  1.000000                      0.995498
+32712  c3ed3d4afd05fc43  0.000045       1     0.931093          https://item.fril.jp/bc7ae485a59de01d6ad428ee19671dfa  0.000038                      0.940083
+...
+```
 
 ## 実際の使用例
 "雷ちゃん"等で検索すると、ほしい情報がおおよそちゃんと上に来るようにチューニングすることができた。  
