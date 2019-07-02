@@ -56,3 +56,8 @@ Pixivについては明示的にクローリング先に設定していないが
 <div align="center">
  <img width="100%" src="https://user-images.githubusercontent.com/4949982/60481343-ec655680-9cc7-11e9-8a95-95d1562190ca.png">
 </div>
+
+"洒落怖"など、他のクエリでも望んだ結果が帰ってきている。
+<div align="center">
+ <img width="100%" src="https://user-images.githubusercontent.com/4949982/60481649-4286c980-9cc9-11e9-9601-2cb562ca29a9.png">
+</div>
