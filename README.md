@@ -25,14 +25,49 @@
 </div>
 
 ### B. HTMLのパースと整形
- Aで取得したデータは大きすぎるので、Bのプロセスで、ｔｆ-idfでの検索の主な特徴量となる、"title", "description", "body"を取り出します。  
+ Aで取得したデータは大きすぎるので、Bのプロセスで、tfidfでの検索の主な特徴量となる、"title", "description", "body"を取り出します。  
  また、そのページが参照している外部のURLをすべてパースします。  
- 
+```python
+soup = BeautifulSoup(html, features='lxml')
+for script in soup(['script', 'style']):
+    script.decompose()
+title = soup.title.text
+description = soup.find('head').find(
+                'meta', {'name': 'description'})
+if description is None:
+    description = ''
+else:
+    description = description.get('content')
+body = soup.find('body').get_text()
+body = re.sub('\n', ' ', body)
+body = re.sub(r'\s{1,}', ' ', body)
+```
+BeautifulSoupでシンプルに処理することができる.  
+
 ### C. IDF辞書の作成 
  頻出する単語の重要度を下げるために、各単語がどの程度のドキュメントで参照されているかをカウントします。  
 
 ### D. TDIDFの計算
- B, Cのデータを利用して、TFIDFとして完成させます
+ B, Cのデータを利用して、TFIDFとして完成させます  
+`title` `description` `body`はそれぞれ重要度が異なっており、 `title` : `description` : `body` = `1` : `1` : `0.001`  
+として処理しました。  
+```python
+# title desc weight = 1
+text = arow.title + arow.description 
+text = sanitize(text)
+for term in m.parse(text).strip().split():
+    if term_freq.get(term) is None:
+        term_freq[term] = 0
+    term_freq[term] += 1
+
+# title body = 0.001 
+text = arow.body
+text = sanitize(text)
+for term in m.parse(text).strip().split():
+    if term_freq.get(term) is None:
+        term_freq[term] = 0
+    term_freq[term] += 0.001 # ここのweightを 0.001 のように小さい値を設定する
+```
 
 ### F. あるURLと、あるURLのHTMLがリンクしているURLの転置インデックスを作成
  昔良くあった、URLのリンクを色んな所から与えるとSEOができるということを知っていたので、どの程度外部から非参照されているか知るため、このような処理を行います
