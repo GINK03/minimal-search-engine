@@ -13,6 +13,7 @@ from pathlib import Path
 import time
 import os
 from collections import namedtuple
+import urllib.request
 
 if '/usr/bin/nkf' not in os.popen('which nkf').read():
     raise Exception('there is no nkf')
@@ -27,8 +28,6 @@ HTML_TIME_ROW = namedtuple(
     'HTML_TIME_ROW', ['html', 'time', 'url', 'status_code'])
 
 qos = []
-
-
 def QOS(netloc):  # print('qos', qos.count(netloc))
     if len(qos) >= 10:
         if qos.count(netloc) >= 3:
@@ -40,7 +39,6 @@ def QOS(netloc):  # print('qos', qos.count(netloc))
     else:
         qos.append(netloc)
         return True
-
 
 def blackList(url):
     if 'twitter.com' in url:
@@ -58,7 +56,6 @@ def blackList(url):
     else:
         return True
 
-
 def path_paramter_sanitize(url):
     urlp = urllib.parse.urlparse(url)
     path = urlp.path
@@ -67,6 +64,31 @@ def path_paramter_sanitize(url):
     url = urlp._replace(path=path).geturl()
     return url
 
+def content_get(url):
+    r = requests.get(url, timeout=30.0,
+                     headers={'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'}, stream=True)
+    # r.encoding = r.apparent_encoding
+    status_code = r.status_code
+    if status_code not in {200, 404}:
+        print(r.status_code)
+        raise Exception('there is error code')
+    return r.content, status_code
+
+def content_get2(url):
+    import urllib.request
+    r = urllib.request.Request(url)
+    r.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36')
+    r.add_header('Referer', url)
+    with urllib.request.urlopen(r) as response:
+        try:
+            content = response.read() # return byte-obj
+        except Exception as ex:
+            print(ex, response.status)
+            content = None
+            raise Exception(f'Error in response {url} {response.status}')
+        #print(content, response)
+        status_code = response.status
+    return content, status_code
 
 Path('tmp/local_char_change').mkdir(exist_ok=True)
 
@@ -95,15 +117,8 @@ def scrape(arg):
             # if QOS(netloc=netloc) is False:
             # print('conflict QOS control', netloc)
             #    continue
-            r = requests.get(url, timeout=30.0,
-                             headers={'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'}, stream=True)
-            # r.encoding = r.apparent_encoding
-            status_code = r.status_code
-            if status_code not in {200, 404}:
-                print(r.status_code)
-                raise Exception('there is error code')
-
-            html = local_char_change(r.content)
+            content, status_code = content_get2(url)
+            html = local_char_change(content)
             soup = BeautifulSoup(html, features='lxml')
             if not (soup.find('html').get('lang') == 'ja' or
                     (soup.find('meta', {'name': "content-language"}) and soup.find('meta', {'name': "content-language"}).get('content') == "ja") or
@@ -152,7 +167,7 @@ def scrape(arg):
 
 def chunk_urls(urls):
     args = {}
-    CHUNK = len(urls)//10000
+    CHUNK = len(urls)//min(10000, len(urls))
     for idx, url in enumerate(urls):
         key = idx % CHUNK
         if args.get(key) is None:
