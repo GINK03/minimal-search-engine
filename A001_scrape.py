@@ -4,10 +4,10 @@ from bs4 import BeautifulSoup
 from hashlib import sha256
 from FFDB import FFDB
 import urllib.parse
-import datetime 
+import datetime
 from concurrent.futures import ProcessPoolExecutor as PPE
 from concurrent.futures import ThreadPoolExecutor as TPE
-import pickle 
+import pickle
 import glob
 from pathlib import Path
 import time
@@ -15,7 +15,8 @@ import os
 from collections import namedtuple
 ffdb = FFDB(tar_path='tmp/htmls')
 
-DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get( 'DELAY_TIME') else 0.0
+DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get(
+    'DELAY_TIME') else 0.0
 
 CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 32
 
@@ -37,6 +38,7 @@ def QOS(netloc):  # print('qos', qos.count(netloc))
         qos.append(netloc)
         return True
 
+
 def blackList(url):
     if 'twitter.com' in url:
         return False
@@ -48,23 +50,37 @@ def blackList(url):
         return False
     elif 'dmm.co.jp' in url:
         return False
+    elif re.search(r'.jpg$', url):
+        return False
     else:
-        return True 
+        return True
+
 
 def path_paramter_sanitize(url):
     urlp = urllib.parse.urlparse(url)
     path = urlp.path
     path = re.sub(r'/-/.*?$', '', path)
-    #print(path)
+    # print(path)
     url = urlp._replace(path=path).geturl()
     return url
+
+
+Path('tmp/local_char_change').mkdir(exist_ok=True)
+def local_char_change(x):
+    hashed = sha256(x).hexdigest()[:16]
+    with open(f'tmp/local_char_change/{hashed}', 'wb') as fp:
+        fp.write(x)
+    html_utf8 = os.popen(f'nkf -w tmp/local_char_change/{hashed}').read()
+    Path(f'tmp/local_char_change/{hashed}').unlink()
+    return html_utf8
+
+
 def scrape(arg):
     key, urls = arg
     ret = set()
     for url in urls:
         try:
             url = path_paramter_sanitize(url)
-            #print(url)
             if blackList(url) is False:
                 continue
             if ffdb.exists(url) is True:
@@ -72,27 +88,26 @@ def scrape(arg):
             urlp = urllib.parse.urlparse(url)
             scheme, netloc = (urlp.scheme, urlp.netloc)
             # if QOS(netloc=netloc) is False:
-            #print('conflict QOS control', netloc)
+            # print('conflict QOS control', netloc)
             #    continue
             r = requests.get(url, timeout=30.0,
                              headers={'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'}, stream=True)
-            r.encoding = r.apparent_encoding
-            # print(r.text)
+            # r.encoding = r.apparent_encoding
             status_code = r.status_code
             if status_code not in {200, 404}:
                 print(r.status_code)
                 raise Exception('there is error code')
 
-            soup = BeautifulSoup(r.text, features='lxml')
-            if not (soup.find('html').get('lang') == 'ja' or 
-                        (soup.find('meta', {'name': "content-language"}) and soup.find('meta', {'name': "content-language"}).get('content') == "ja") or 
-                        (soup.find('meta', {'http-equiv': "Content-Type"}) and 'jp' in soup.find('meta', {'http-equiv': "Content-Type"}).get('content')) or 
-                        ('.jp' in netloc)):
+            html = local_char_change(r.content)
+            soup = BeautifulSoup(html, features='lxml')
+            if not (soup.find('html').get('lang') == 'ja' or
+                    (soup.find('meta', {'name': "content-language"}) and soup.find('meta', {'name': "content-language"}).get('content') == "ja") or
+                    (soup.find('meta', {'http-equiv': "Content-Type"}) and 'jp' in soup.find('meta', {'http-equiv': "Content-Type"}).get('content')) or
+                    ('.jp' in netloc)):
                 ffdb.save(key=url, val=None)
                 continue
-
             ffdb.save(key=url, val=[HTML_TIME_ROW(
-                html=r.text, time=datetime.datetime.now(), url=url, status_code=status_code)])
+                html=html, time=datetime.datetime.now(), url=url, status_code=status_code)])
             for a in soup.find_all('a', {'href': True}):
                 urlpsub = urllib.parse.urlparse(a.get('href'))
                 #print('before', urlpsub)
@@ -101,8 +116,8 @@ def scrape(arg):
                         urlpsub = urlpsub._replace(
                             scheme=scheme, netloc=netloc, query='')
                     if urlpsub.scheme == '':
-                        urlpsub = urlpsub._replace(scheme=scheme) 
-                    urlpsub = urlpsub._replace(query='') 
+                        urlpsub = urlpsub._replace(scheme=scheme)
+                    urlpsub = urlpsub._replace(query='')
                 except Exception as ex:
                     print(ex)
                     continue
@@ -115,12 +130,12 @@ def scrape(arg):
             # retがメモリを消費しすぎるので10000件にリンクを限定
             ret = set(list(ret)[-1000:])
             time.sleep(DELAY_TIME)
-            print('done', url)
+            print('done', url, soup.title.text)
         except Exception as ex:
             print('err', url)
             ffdb.save(key=url, val=None)
             print(ex)
-    
+
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('finish batch-forked iteration.')
     Path('tmp/snapshots').mkdir(exist_ok=True, parents=True)
@@ -141,11 +156,13 @@ def chunk_urls(urls):
     args = [(key, urls) for key, urls in args.items()]
     return args
 
+
 def main():
     urls = set()
     # urls |= scrape((1, ['https://news.yahoo.co.jp/']))
     #urls |= scrape((2, ['https://www.msn.com/ja-jp/news']))
-    urls |= scrape((3, ['http://blog.livedoor.jp/geek/archives/cat_10022560.html']))
+    urls |= scrape(
+        (3, ['http://blog.livedoor.jp/geek/archives/cat_10022560.html']))
     #urls |= scrape((4, ['https://www3.nhk.or.jp/news/']))
     print(urls)
     snapshots = sorted(glob.glob('tmp/snapshots/*'))
@@ -160,5 +177,7 @@ def main():
         urls = urltmp
         if len(urls) == 0:
             break
+
+
 if __name__ == '__main__':
     main()
