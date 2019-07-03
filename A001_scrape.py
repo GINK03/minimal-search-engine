@@ -22,7 +22,7 @@ ffdb = FFDB(tar_path='tmp/htmls')
 DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get(
     'DELAY_TIME') else 0.0
 
-CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 32
+CPU_SIZE = int(os.environ['CPU_SIZE']) if os.environ.get('CPU_SIZE') else 16
 
 HTML_TIME_ROW = namedtuple(
     'HTML_TIME_ROW', ['html', 'time', 'url', 'status_code'])
@@ -109,12 +109,12 @@ def local_char_change(x):
     Path(f'tmp/local_char_change/{hashed}').unlink()
     return html_utf8
 
-
-def scrape(arg):
+def tmap(arg):
     key, urls = arg
     ret = set()
     for url in urls:
         try:
+            start_time = time.time()
             url = path_paramter_sanitize(url)
             if blackList(url) is False:
                 continue
@@ -154,11 +154,21 @@ def scrape(arg):
             ret = set(list(ret)[-100:])
             '''
             time.sleep(DELAY_TIME)
-            print('done', url, soup.title.text)
+            print('done', url, soup.title.text, f'elapsed={time.time() - start_time:0.04f}')
         except Exception as ex:
             print('err', url)
             ffdb.save(key=url, val=None)
             print(ex)
+    return ret
+
+def scrape(arg):
+    key, urls = arg
+    
+    targs = chunk_urls(urls)
+    ret = set()
+    with TPE(max_workers=10) as exe:
+        for _ret in exe.map(tmap, targs):
+            ret |= _ret
 
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('finish batch-forked iteration.')
