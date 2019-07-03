@@ -13,6 +13,9 @@ from pathlib import Path
 import time
 import os
 from collections import namedtuple
+
+if '/usr/bin/nkf' not in os.popen('which nkf').read():
+    raise Exception('there is no nkf')
 ffdb = FFDB(tar_path='tmp/htmls')
 
 DELAY_TIME = float(os.environ['DELAY_TIME']) if os.environ.get(
@@ -66,6 +69,8 @@ def path_paramter_sanitize(url):
 
 
 Path('tmp/local_char_change').mkdir(exist_ok=True)
+
+
 def local_char_change(x):
     hashed = sha256(x).hexdigest()[:16]
     with open(f'tmp/local_char_change/{hashed}', 'wb') as fp:
