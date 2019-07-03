@@ -1,0 +1,6 @@
+mojimoji==0.0.9
+networkx==2.2
+numpy==1.16.2
+pandas==0.24.2
+requests==2.21.0
+beautifulsoup4==4.7.1
