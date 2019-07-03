@@ -28,6 +28,8 @@ HTML_TIME_ROW = namedtuple(
     'HTML_TIME_ROW', ['html', 'time', 'url', 'status_code'])
 
 qos = []
+
+
 def QOS(netloc):  # print('qos', qos.count(netloc))
     if len(qos) >= 10:
         if qos.count(netloc) >= 3:
@@ -39,6 +41,7 @@ def QOS(netloc):  # print('qos', qos.count(netloc))
     else:
         qos.append(netloc)
         return True
+
 
 def blackList(url):
     if 'twitter.com' in url:
@@ -56,6 +59,7 @@ def blackList(url):
     else:
         return True
 
+
 def path_paramter_sanitize(url):
     urlp = urllib.parse.urlparse(url)
     path = urlp.path
@@ -63,6 +67,7 @@ def path_paramter_sanitize(url):
     # print(path)
     url = urlp._replace(path=path).geturl()
     return url
+
 
 def content_get(url):
     r = requests.get(url, timeout=30.0,
@@ -74,6 +79,7 @@ def content_get(url):
         raise Exception('there is error code')
     return r.content, status_code
 
+
 def content_get2(url):
     import urllib.request
     r = urllib.request.Request(url)
@@ -81,14 +87,16 @@ def content_get2(url):
     r.add_header('Referer', url)
     with urllib.request.urlopen(r) as response:
         try:
-            content = response.read() # return byte-obj
+            content = response.read()  # return byte-obj
         except Exception as ex:
-            print(ex, response.status)
+            #print(ex, response.status)
             content = None
             raise Exception(f'Error in response {url} {response.status}')
         #print(content, response)
         status_code = response.status
+        #print(url, status_code)
     return content, status_code
+
 
 Path('tmp/local_char_change').mkdir(exist_ok=True)
 
@@ -128,9 +136,9 @@ def scrape(arg):
                 continue
             ffdb.save(key=url, val=[HTML_TIME_ROW(
                 html=html, time=datetime.datetime.now(), url=url, status_code=status_code)])
-            for a in soup.find_all('a', {'href': True}):
-                urlpsub = urllib.parse.urlparse(a.get('href'))
-                #print('before', urlpsub)
+            '''
+            for href in set([a.get('href') for a in soup.find_all('a', {'href': True})][:10]):
+                urlpsub = urllib.parse.urlparse(href)
                 try:
                     if urlpsub.netloc == '':
                         urlpsub = urlpsub._replace(
@@ -141,14 +149,10 @@ def scrape(arg):
                 except Exception as ex:
                     print(ex)
                     continue
-                # if ffdb.exists(urlpsub.geturl()) is True:
-                #    continue
-                #print('after', urlpsub)
-                #print(url, urlpsub.geturl())
                 ret.add(path_paramter_sanitize(urlpsub.geturl()))
-
-            # retがメモリを消費しすぎるので10000件にリンクを限定
-            ret = set(list(ret)[-1000:])
+            # retがメモリを消費しすぎるので100件にリンクを限定
+            ret = set(list(ret)[-100:])
+            '''
             time.sleep(DELAY_TIME)
             print('done', url, soup.title.text)
         except Exception as ex:
