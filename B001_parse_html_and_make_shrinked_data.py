@@ -28,13 +28,16 @@ def pmap(arg):
         try:
             last_fn = str(path).split('/')[-1]
             if Path(f'tmp/parsed/{last_fn}').exists():
-                print('passed', idx, path)
+                #print('passed', idx, path)
                 continue
             now = datetime.datetime.now()
             with open(path, 'rb') as fp:
                 arow = pickle.loads(gzip.decompress(fp.read()))
             if arow is None:
                 continue
+            if not isinstance(arow, list):
+                continue
+            # print(type(arow))
             html = arow[-1].html
             time = arow[-1].time
             url = arow[-1].url
@@ -43,20 +46,19 @@ def pmap(arg):
 
             status_code = arow[-1].status_code
             if status_code != 200:
-                print('skip', status_code)
+                #print('skip', status_code)
                 ffdb.save(key=url, val=None)
                 continue
             if ffdb.exists(key=url) is True:
                 continue
             # print(path)
             # continue
-            print(idx, path)
             soup = BeautifulSoup(html, features='lxml')
 
             for script in soup(['script', 'style']):
                 script.decompose()
             title = soup.title.text
-            print(title)
+            print(idx, path, title)
             description = soup.find('head').find(
                 'meta', {'name': 'description'})
             if description is None:
@@ -82,6 +84,12 @@ def pmap(arg):
             parsed = PARSED(url=url, time=time, title=title,
                             description=description, body=body, hrefs=hrefs)
             ffdb.save(key=url, val=parsed)
+        except UnicodeError as ex:
+            Path(path).unlink()
+        except UnicodeEncodeError as ex:
+            Path(path).unlink()
+        except EOFError as ex:
+            Path(path).unlink()
         except Exception as ex:
             print(ex)
             ffdb.save(key=url, val=None)
@@ -94,7 +102,7 @@ files = list(glob.glob('./tmp/htmls/*'))
 random.shuffle(files)
 size = len(files)
 for idx, path in enumerate(files):
-    key = idx % (size//100)
+    key = idx % (size//100000)
     #key = idx % 16
     if args.get(key) is None:
         args[key] = []

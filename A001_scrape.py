@@ -109,8 +109,9 @@ def local_char_change(x):
     Path(f'tmp/local_char_change/{hashed}').unlink()
     return html_utf8
 
-def tmap(arg):
+def scrape(arg):
     key, urls = arg
+
     ret = set()
     for url in urls:
         try:
@@ -154,21 +155,13 @@ def tmap(arg):
             ret = set(list(ret)[-100:])
             '''
             time.sleep(DELAY_TIME)
-            print('done', url, soup.title.text, f'elapsed={time.time() - start_time:0.04f}')
+            print('done', url, soup.title.text,
+                  f'elapsed={time.time() - start_time:0.04f}')
         except Exception as ex:
             print('err', url)
-            ffdb.save(key=url, val=None)
+            # save Exception as it is
+            ffdb.save(key=url, val=ex)
             print(ex)
-    return ret
-
-def scrape(arg):
-    key, urls = arg
-    
-    targs = chunk_urls(urls)
-    ret = set()
-    with TPE(max_workers=10) as exe:
-        for _ret in exe.map(tmap, targs):
-            ret |= _ret
 
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('finish batch-forked iteration.')
@@ -201,7 +194,10 @@ def main():
     print(urls)
     snapshots = sorted(glob.glob('tmp/snapshots/*'))
     for snapshot in snapshots:
-        urls |= pickle.loads(open(snapshot, 'rb').read())
+        try:
+            urls |= pickle.loads(open(snapshot, 'rb').read())
+        except EOFError as ex:
+            continue
     while True:
         urltmp = set()
         with PPE(max_workers=CPU_SIZE) as exe:
