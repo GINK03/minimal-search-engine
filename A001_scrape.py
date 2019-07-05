@@ -200,8 +200,8 @@ def scrape(arg):
             # if QOS(netloc=netloc) is False:
             # print('conflict QOS control', netloc)
             #    continue
-            html, status_code = content_get3(url, key)
-            #html = local_char_change(content)
+            content, status_code = content_get2(url)
+            html = local_char_change(content)
             soup = BeautifulSoup(html, features='lxml')
             if not (soup.find('html').get('lang') == 'ja' or
                     (soup.find('meta', {'name': "content-language"}) and soup.find('meta', {'name': "content-language"}).get('content') == "ja") or
@@ -211,7 +211,6 @@ def scrape(arg):
                 continue
             ffdb.save(key=url, val=[HTML_TIME_ROW(
                 html=html, time=datetime.datetime.now(), url=url, status_code=status_code)])
-            '''
             for href in set([a.get('href') for a in soup.find_all('a', {'href': True})][:10]):
                 urlpsub = urllib.parse.urlparse(href)
                 try:
@@ -225,9 +224,9 @@ def scrape(arg):
                     print(ex)
                     continue
                 ret.add(path_paramter_sanitize(urlpsub.geturl()))
+                # print(path_paramter_sanitize(urlpsub.geturl()))
             # retがメモリを消費しすぎるので100件にリンクを限定
             ret = set(list(ret)[-100:])
-            '''
             time.sleep(DELAY_TIME)
             print(f'done@{key:03d}', url, soup.title.text,
                   f'elapsed={time.time() - start_time:0.04f}')
@@ -251,7 +250,7 @@ def chunk_urls(urls):
     args = {}
     # あまり引数が多いと、メモリに乗らない
     urls = list(urls)[:3000000]
-    CHUNK = len(urls)//min(CPU_SIZE, len(urls))
+    CHUNK = len(urls)//min(CPU_SIZE, max(len(urls),1))
     random.shuffle(urls)
     for idx, url in enumerate(urls):
         key = idx % CHUNK
@@ -276,7 +275,7 @@ def main():
     while True:
         urltmp = set()
         with PPE(max_workers=CPU_SIZE) as exe:
-            for _urlret in exe.map(thscrape, chunk_urls(urls)):
+            for _urlret in exe.map(scrape, chunk_urls(urls)):
                 if _urlret is not None:
                     urltmp |= _urlret
         urls = urltmp
