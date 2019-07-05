@@ -42,9 +42,10 @@ if __name__ == '__main__':
     df = None
     for term in m.parse(text).strip().split():
         hterm = hashing(term)
-        #print(term, hterm)
+        print(term, hterm)
         adf = pd.read_csv(f'tmp/inverted-index/{hterm}', sep='\t')
         adf.columns = ['hurl', 'weight', 'refnum']
+        adf.drop_duplicates(subset='hurl', keep=False, inplace=True)
         if df is None:
             df = adf
         else:
@@ -57,6 +58,8 @@ if __name__ == '__main__':
     df['weight_norm'] = df['weight']/df['weight'].max() * 1
     # print(df.columns)
     df['url'] = df['hurl'].apply(lambda x: hash_url.get(x))
+    # adhoc remove b.hatena
+    df = df[df['url'].apply(lambda x: 'b.hatena.ne.jp' not in x)]
     df['pagerank'] = df['url'].apply(get_pagerank_weight)
     df['pagerank'] = df['pagerank']/df['pagerank'].max()
     df['weight*refnum_score+pagerank'] = df['weight_norm'] * \

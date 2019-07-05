@@ -1,4 +1,4 @@
-mojimoji==0.0.9
+mojimoji
 networkx==2.2
 numpy==1.16.2
 pandas==0.24.2

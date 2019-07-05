@@ -34,8 +34,10 @@ def pmap(arg):
             with open(path, 'rb') as fp:
                 arow = pickle.loads(gzip.decompress(fp.read()))
             if arow is None:
+                # Path(path).unlink()
                 continue
             if not isinstance(arow, list):
+                Path(path).unlink()
                 continue
             # print(type(arow))
             html = arow[-1].html
@@ -58,7 +60,7 @@ def pmap(arg):
             for script in soup(['script', 'style']):
                 script.decompose()
             title = soup.title.text
-            print(idx, path, title)
+            print(idx, '@', key, path, title)
             description = soup.find('head').find(
                 'meta', {'name': 'description'})
             if description is None:
@@ -110,5 +112,5 @@ for idx, path in enumerate(files):
 args = [(key, paths) for key, paths in args.items()]
 print('made chunks')
 #[pmap(arg) for arg in args]
-with PPE(max_workers=32) as exe:
+with PPE(max_workers=8) as exe:
     exe.map(pmap, args)

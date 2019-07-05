@@ -11,7 +11,9 @@ from concurrent.futures import ProcessPoolExecutor as PPE
 import MeCab
 import json
 HTML_TIME_ROW = namedtuple('HTML_TIME_ROW', ['html', 'time', 'url'])
-PARSED = namedtuple('PARSED', ['url', 'time', 'title', 'description', 'body', 'hrefs'])
+PARSED = namedtuple(
+    'PARSED', ['url', 'time', 'title', 'description', 'body', 'hrefs'])
+
 
 def sanitize(text):
     import mojimoji
@@ -19,13 +21,15 @@ def sanitize(text):
     text = text.lower()
     return text
 
+
 def pmap(arg):
     key, paths = arg
-    m = MeCab.Tagger('-Owakati -d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-ipadic-neologd')
+    m = MeCab.Tagger(
+        '-Owakati -d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-ipadic-neologd')
 
-    term_freq = {} # this is per doc
+    term_freq = {}  # this is per doc
     for path in paths:
-        #pickle.loads(gzip.decompress(path.open('rb').read()))
+        # pickle.loads(gzip.decompress(path.open('rb').read()))
         try:
             arow = pickle.loads(gzip.decompress(path.open('rb').read()))
             if arow is None:
@@ -45,6 +49,7 @@ def pmap(arg):
             continue
     return term_freq
 
+
 args = {}
 for idx, path in enumerate(Path().glob('./tmp/parsed/*')):
     key = idx % 16
@@ -52,7 +57,7 @@ for idx, path in enumerate(Path().glob('./tmp/parsed/*')):
         args[key] = []
     args[key].append(path)
 args = [(key, paths) for key, paths in args.items()]
-#[pmap(args[0])]
+# [pmap(args[0])]
 
 term_freq = {}
 with PPE(max_workers=16) as exe:

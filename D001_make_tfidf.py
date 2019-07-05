@@ -28,6 +28,8 @@ def sanitize(text):
 
 
 idf = json.load(open('tmp/idf.json'))
+
+
 def pmap(arg):
     key, paths = arg
     m = MeCab.Tagger(
@@ -35,7 +37,7 @@ def pmap(arg):
 
     for path in paths:
         path = Path(path)
-        #print(path)
+        # print(path)
         term_freq = {}
         try:
             arow = pickle.loads(gzip.decompress(path.open('rb').read()))
@@ -63,7 +65,8 @@ def pmap(arg):
 
             tfidf = {}
             for term in list(term_freq.keys()):
-                tfidf[term] = math.log(term_freq[term]+math.e)/idf[term]
+                if idf.get(term) is not None:
+                    tfidf[term] = math.log(term_freq[term]+math.e)/idf[term]
             ffdb.save(key=url, val=URL_TFIDF(url=url, tfidf=tfidf))
         except Exception as ex:
             print(ex)
@@ -77,7 +80,7 @@ for idx, path in enumerate(glob.glob('./tmp/parsed/*')):
         args[key] = []
     args[key].append(path)
 args = [(key, paths) for key, paths in args.items()]
-#[pmap(args[0])]
+# [pmap(args[0])]
 term_freq = {}
 with PPE(max_workers=16) as exe:
     exe.map(pmap, args)
