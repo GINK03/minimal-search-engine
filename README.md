@@ -9,7 +9,7 @@ $ which nkf
 ```
 
 ```console
-$ pip install -r requirements.txt
+$ pip3 install -r requirements.txt
 ```
 
 ## 全体の処理の流れ
