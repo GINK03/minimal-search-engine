@@ -1,16 +1,7 @@
-# Pure Pythonでサーチエンジン(PageRank, tfidfとか対応)
+## 再現
+基本的にGitHubのコードをUbuntu等のLinuxでAから順に実行してもらえば、再現できます。  
 
-## 依存パッケージと依存ソフトウェア
-様々なサイトを巡回する必要があり、requestsが文字コードの推論を高確率で失敗するので、 `nkf` をlinux環境で入れている必要があります。
-```console
-$ sudo apt install nkf
-$ which nkf
-/usr/bin/nkf
-```
-
-```console
-$ pip3 install -r requirements.txt
-```
+クローラ（スクレイパー）はやろうと思えば無限に取得してしまうので、適当にSEEDを決めて、適当な時間で終了することを前提としていています。
 
 ## 全体の処理の流れ
  - A. クローリング
