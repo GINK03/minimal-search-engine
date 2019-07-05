@@ -1,3 +1,24 @@
+## 依存パッケージと依存ソフトウェア
+様々なサイトを巡回する必要があり、requestsが文字コードの推論を高確率で失敗するので、 `nkf` をlinux環境で入れている必要があります。
+```console
+$ sudo apt install nkf
+$ which nkf
+/usr/bin/nkf
+```
+Mecabも入れます
+```
+$ sudo apt install mecab libmecab-dev mecab-ipadic
+$ sudo apt install mecab-ipadic-utf8
+$ sudo apt install python-mecab
+$ pip3 install mecab-python3
+$ git clone --depth 1 https://github.com/neologd/mecab-ipadic-neologd.git
+$ ./bin/install-mecab-ipadic-neologd -n
+```
+残りの依存をインストールします
+```console
+$ pip3 install -r requirements.txt
+```
+
 ## 再現
 基本的にGitHubのコードをUbuntu等のLinuxでAから順に実行してもらえば、再現できます。  
 
