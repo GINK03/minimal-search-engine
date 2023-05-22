@@ -1,4 +1,4 @@
-requests==2.21.0
+requests==2.31.0
 pandas==0.24.2
 mojimoji==0.0.9
 networkx==2.2
